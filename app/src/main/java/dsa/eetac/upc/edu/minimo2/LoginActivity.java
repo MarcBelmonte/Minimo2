@@ -357,7 +357,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
     }
 
-    //Open the main activity
+    //Open the main activity if the login is correct
     private void newIntent(){
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);

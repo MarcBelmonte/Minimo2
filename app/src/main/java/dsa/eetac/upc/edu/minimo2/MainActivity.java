@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private RecyclerAdapter myAdapter;
     private DibaAPI myApi;
-    ProgressBar pb1;
+   // ProgressBar pb1;
 
     TextView tvCityName;
     TextView tvCityIne;
@@ -54,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
         tvCityIne = findViewById(R.id.cityId);
         ivCityImage = findViewById(R.id.photo);
 
-        //Progress loading
+        Intent intent = getIntent();
+
+        //Progress dialog
         progressDialog = new ProgressDialog(this);
         progressDialog.setTitle("Loading...");
         progressDialog.setMessage("Waiting for the server");
@@ -62,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.show();
 
-        Intent intent = getIntent();
+
 
         myApi = DibaAPI.createAPIRest();
         getData();
@@ -130,8 +132,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (token != null) {
+        }
     }
-
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == 1) {
+            token = data.getStringExtra("token");
+        }
+    }
 }
 
 
