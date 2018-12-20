@@ -1,11 +1,16 @@
 package dsa.eetac.upc.edu.minimo2;
 
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -21,69 +26,112 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
-    private RecyclerView.LayoutManager layoutManager;
-    private RestAPI myApi;
+    private RecyclerAdapter myAdapter;
+    private DibaAPI myApi;
     ProgressBar pb1;
+
+    TextView tvCityName;
+    TextView tvCityIne;
+    ImageView ivCityImage;
+
+    ProgressDialog progressDialog;
+
+    private String token;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
-
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        myAdapter = new RecyclerAdapter(this);
+        recyclerView.setAdapter(myAdapter);
         recyclerView.setHasFixedSize(true);
-        layoutManager = new LinearLayoutManager(this);
-        recyclerView.setLayoutManager(layoutManager);
-        launchAPI();
-        getCities();
-    }
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-    private void launchAPI(){
-        Gson gson = new GsonBuilder().create();
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(RestAPI.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build();
-        myApi = retrofit.create(RestAPI.class);
+        tvCityName = findViewById(R.id.cityName);
+        tvCityIne = findViewById(R.id.cityId);
+        ivCityImage = findViewById(R.id.photo);
+
+        //Progress loading
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Loading...");
+        progressDialog.setMessage("Waiting for the server");
+        progressDialog.setCancelable(false);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.show();
+
+        Intent intent = getIntent();
+
+        myApi = DibaAPI.createAPIRest();
+        getData();
     }
-    private void getCities(){
-        RestAPI diba = myApi;
-        Call<Cities> citiesCall = diba.cities("1","11");
-        citiesCall.enqueue(new Callback<Cities>() {
+    private void getData() {
+        Call<Cities> elementCall = myApi.getData();
+
+        elementCall.enqueue(new Callback<Cities>() {
             @Override
             public void onResponse(Call<Cities> call, Response<Cities> response) {
-                int statusCode = response.code();
-                Cities cities = response.body();
-                recyclerView.setAdapter(new RecyclerAdapter(((Cities) cities).getElements()));
+                if(response.isSuccessful()){
+                    Cities cities = response.body();
+
+                    List<Element> elementList = cities.getElements();
+
+                    for(int i = 0; i<elementList.size(); i++){
+                        Log.i("Nom: " + elementList.get(i).getMunicipiNom(), response.message());
+                    }
+
+                    if(elementList.size() != 0){
+                        myAdapter.addElements(elementList);
+                    }
+
+                    progressDialog.hide();
+                } else {
+                    Log.e("Response failure", String.valueOf(response.errorBody()));
+
+                    progressDialog.hide();
+
+                    //Show the alert dialog
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+                    alertDialogBuilder
+                            .setTitle("Error")
+                            .setMessage(response.message())
+                            .setCancelable(false)
+                            .setPositiveButton("OK", (dialog, which) -> finish());
+
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    alertDialog.show();
+                }
             }
 
             @Override
             public void onFailure(Call<Cities> call, Throwable t) {
-                t.printStackTrace();
+                Log.e("No connection", t.getMessage());
+
+                progressDialog.hide();
+
+                //Show the alert dialog
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+                alertDialogBuilder
+                        .setTitle("Error")
+                        .setMessage(t.getMessage())
+                        .setCancelable(false)
+                        .setPositiveButton("OK", (dialog, which) -> finish());
+
+                AlertDialog alertDialog = alertDialogBuilder.create();
+                alertDialog.show();
             }
-        });
-    }
-    retrofit2.Callback<List<Element>> Callback = new Callback<List<Element>>(){
-        @Override
-        public void onResponse(Call<List<Element>> call, Response<List<Element>> response) {
-            if (response.isSuccessful()) {
-                List<Element> data = new ArrayList<>();
-                data.addAll(response.body());
-                recyclerView.setAdapter(new RecyclerAdapter(data));
-            } else {
-                Log.d("Callback", "Code: " + response.code() + " Message: " + response.message());
-            }
-    }
-        @Override
-        public void onFailure(Call<List<Element>> call, Throwable t) {
-            t.printStackTrace();
+            });
         }
-    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
 }
 
 

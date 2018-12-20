@@ -334,21 +334,20 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         protected void onPostExecute(final Boolean success) {
             mAuthTask = null;
             showProgress(false);
+
             if (success) {
-                finish();
+                final SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(LoginActivity.this);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("registered", true);
+                editor.putString("username", this.mEmail);
+                editor.putString("password", this.mPassword);
+                editor.apply();
+
+                newIntent();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
                 mPasswordView.requestFocus();
             }
-            final SharedPreferences sharedPref =
-                    PreferenceManager.getDefaultSharedPreferences(LoginActivity.this);
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putBoolean("registered",true);
-            editor.putString("username",this.mEmail);
-            editor.putString("password", this.mPassword);
-            editor.apply();
-            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            LoginActivity.this.startActivity(intent);
         }
 
         @Override
@@ -356,6 +355,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             showProgress(false);
         }
+    }
+
+    //Open the main activity
+    private void newIntent(){
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
     }
 }
 
